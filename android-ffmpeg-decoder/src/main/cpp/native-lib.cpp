@@ -10,6 +10,9 @@ extern "C" {
 #include <sys/stat.h>
 }
 
+#include <string>
+#include <map>
+
 #define LOGE(format, ...) __android_log_print(ANDROID_LOG_ERROR, "(>_<)", format, ##__VA_ARGS__);
 #define LOGI(format, ...) __android_log_print(ANDROID_LOG_INFO, "(>_<)", format, ##__VA_ARGS__);
 
@@ -30,9 +33,69 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_getVersion
     return version;
 }
 
-static bool file_exist(const char *file_path) {
+/**
+ * 文件是否存在
+ * @param file_path
+ * @return
+ */
+static bool FileExists(const char *file_path) {
     return access(file_path, 0) == 0;
 }
+
+/**
+ * 初始化
+ */
+static void InitFFmpeg() {
+    av_log_set_callback(custom_log);
+    av_register_all();
+    avformat_network_init();
+}
+
+/**
+ * 获取格式化后的视频长度
+ * @param avFormatContext
+ * @param buf
+ * @param len
+ */
+static void GetVideoLengthStringFormat(AVFormatContext *avFormatContext, char *buf, size_t len) {
+
+    if (avFormatContext != NULL && buf != NULL && len > 0) {
+
+        int64_t duration = avFormatContext->duration;
+        int tns, thh, tmm, tss;
+        tns = duration / 1000000;
+        thh = tns / 3600;
+        tmm = (tns % 3600) / 60;
+        tss = tns % 60;
+        snprintf(buf, len, "%02d:%02d:%02d", thh, tmm, tss);
+
+    }
+
+}
+
+/**
+ * 读取视频元信息
+ * @param pAvFormatContext
+ * @return 视频元信息集合
+ */
+static std::map<std::string, std::string> GetVideoMetaData(AVFormatContext *pAvFormatContext) {
+
+    std::map<std::string, std::string> result;
+    AVDictionaryEntry *entry = NULL;
+
+    if (pAvFormatContext != NULL) {
+
+        while ((entry = av_dict_get(pAvFormatContext->metadata, "", entry,
+                                    AV_DICT_IGNORE_SUFFIX))) {
+
+            result.insert(std::pair<std::string, std::string>(entry->key, entry->value));
+
+        }
+    }
+
+    return result;
+}
+
 
 /*
  * Class:     com_itdog_decoder_NativeBridge
@@ -59,16 +122,15 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
     char outputStr[500] = {0};
     char info[1000] = {0};
 
+    InitFFmpeg();
+
     sprintf(inputStr, "%s", env->GetStringUTFChars(input, NULL));
     sprintf(outputStr, "%s", env->GetStringUTFChars(output, NULL));
 
-    av_log_set_callback(custom_log);
 
-    av_register_all();
-    avformat_network_init();
     avFormatContext = avformat_alloc_context();
 
-    if(file_exist(inputStr)) {
+    if (FileExists(inputStr)) {
         LOGI("file %s exists.", inputStr);
     } else {
         LOGI("file %s not exists.", inputStr);
@@ -79,9 +141,22 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
         return -1;
     }
 
+    // 打印视频时长
+    char videoLength[256];
+    bzero(videoLength, sizeof(videoLength));
+    GetVideoLengthStringFormat(avFormatContext, videoLength, sizeof(videoLength));
+    LOGI("video length: %s.\n", videoLength);
+
     if (avformat_find_stream_info(avFormatContext, NULL) < 0) {
         LOGE("couldn't find stream information!.\n");
         return -1;
+    }
+
+    // 打印视频元信息
+    std::map<std::string, std::string> metaData = GetVideoMetaData(avFormatContext);
+    LOGI("meta data count: %d.", metaData.size());
+    for (auto i = metaData.begin(); i != metaData.end(); i++) {
+        LOGI("meta data[%s] = %s.\n", i->first.c_str(), i->second.c_str());
     }
 
     videoIndex = -1;
@@ -172,7 +247,7 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
                         snprintf(pictureType, sizeof(pictureType), "OTHER");
                         break;
                 }
-                LOGI("Frame index: %5d, type: %s ysize:%d", frameCount, pictureType, ySize);
+                //LOGI("Frame index: %5d, type: %s ysize:%d", frameCount, pictureType, ySize);
 
                 frameCount++;
             }
@@ -218,7 +293,7 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
                 snprintf(pictureType, sizeof(pictureType), "OTHER");
                 break;
         }
-        LOGI("Frame index: %5d, type: %s", frameCount, pictureType);
+        //LOGI("Frame index: %5d, type: %s", frameCount, pictureType);
 
         frameCount++;
     }
