@@ -30,6 +30,10 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_getVersion
     return version;
 }
 
+static bool file_exist(const char *file_path) {
+    return access(file_path, 0) == 0;
+}
+
 /*
  * Class:     com_itdog_decoder_NativeBridge
  * Method:    decode
@@ -64,16 +68,10 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
     avformat_network_init();
     avFormatContext = avformat_alloc_context();
 
-    // stat file info
-    int fd = open(inputStr, O_RDONLY);
-    if(fd > 0) {
-        struct stat st;
-        bzero(&st, sizeof(st));
-        fstat(fd, &st);
-        LOGI("file %s size = %ld, fd = %d.", inputStr, st.st_size, fd);
-        close(fd);
+    if(file_exist(inputStr)) {
+        LOGI("file %s exists.", inputStr);
     } else {
-        LOGE("file %s not exist!\n", inputStr);
+        LOGI("file %s not exists.", inputStr);
     }
 
     if (avformat_open_input(&avFormatContext, inputStr, NULL, NULL) != 0) {
@@ -116,7 +114,8 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
     outBuf = (uint8_t *) av_malloc(
             av_image_get_buffer_size(AV_PIX_FMT_YUV420P, avCodecContext->width,
                                      avCodecContext->height, 1));
-    av_image_fill_arrays(avFrameYUV->data, avFrameYUV->linesize, outBuf, AV_PIX_FMT_YUV420P, avCodecContext->width, avCodecContext->height, 1);
+    av_image_fill_arrays(avFrameYUV->data, avFrameYUV->linesize, outBuf, AV_PIX_FMT_YUV420P,
+                         avCodecContext->width, avCodecContext->height, 1);
     avPacket = (AVPacket *) av_malloc(sizeof(AVPacket));
     imgConvertContext = sws_getContext(avCodecContext->width, avCodecContext->height,
                                        avCodecContext->pix_fmt,
