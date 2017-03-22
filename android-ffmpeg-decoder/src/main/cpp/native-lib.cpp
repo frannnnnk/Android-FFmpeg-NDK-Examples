@@ -7,6 +7,7 @@ extern "C" {
 #include <unistd.h>
 #include <fcntl.h>
 #include <android/log.h>
+#include <sys/stat.h>
 }
 
 #define LOGE(format, ...) __android_log_print(ANDROID_LOG_ERROR, "(>_<)", format, ##__VA_ARGS__);
@@ -62,6 +63,18 @@ JNIEXPORT jint JNICALL Java_com_itdog_decoder_NativeBridge_decode
     av_register_all();
     avformat_network_init();
     avFormatContext = avformat_alloc_context();
+
+    // stat file info
+    int fd = open(inputStr, O_RDONLY);
+    if(fd > 0) {
+        struct stat st;
+        bzero(&st, sizeof(st));
+        fstat(fd, &st);
+        LOGI("file %s size = %ld, fd = %d.", inputStr, st.st_size, fd);
+        close(fd);
+    } else {
+        LOGE("file %s not exist!\n", inputStr);
+    }
 
     if (avformat_open_input(&avFormatContext, inputStr, NULL, NULL) != 0) {
         LOGE("couldn't open input stream!.\n");

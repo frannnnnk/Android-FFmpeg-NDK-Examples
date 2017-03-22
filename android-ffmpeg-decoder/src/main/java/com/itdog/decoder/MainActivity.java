@@ -90,6 +90,13 @@ public class MainActivity extends AppCompatActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
+
+                        try {
+                            new File(getFilesDir(), YUV_FILE).delete();
+                        } catch (SecurityException ex) {
+
+                        }
+
                         int ret = decodeVideo();
                         if(ret == 0) {
                             handler.sendEmptyMessage(MSG_DECODE_SUCCESS);
