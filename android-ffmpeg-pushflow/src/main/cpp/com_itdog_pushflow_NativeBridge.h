@@ -10,9 +10,9 @@ extern "C" {
 /*
  * Class:     com_itdog_pushflow_NativeBridge
  * Method:    pushFlow
- * Signature: (Ljava/lang/String;Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)I
  */
-JNIEXPORT void JNICALL Java_com_itdog_pushflow_NativeBridge_pushFlow
+JNIEXPORT jint JNICALL Java_com_itdog_pushflow_NativeBridge_pushFlow
   (JNIEnv *, jclass, jstring, jstring);
 
 #ifdef __cplusplus

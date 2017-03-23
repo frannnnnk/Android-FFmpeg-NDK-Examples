@@ -6,7 +6,7 @@ package com.itdog.pushflow;
 
 public class NativeBridge {
 
-    public static native void pushFlow(String inputUrl, String outputUrl);
+    public static native int pushFlow(String inputUrl, String outputUrl);
 
     static {
         System.loadLibrary("avcodec-57");
