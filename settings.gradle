@@ -1,1 +1,1 @@
-include ':android-ffmpeg-helloworld', ':android-ffmpeg-decoder', ':android-ffmpeg-pushflow'
+include ':android-ffmpeg-helloworld', ':android-ffmpeg-decoder', ':android-ffmpeg-pushflow', ':android-ffmpeg-recordvideo'
