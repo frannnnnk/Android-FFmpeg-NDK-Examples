@@ -69,16 +69,17 @@ JNIEXPORT jint JNICALL Java_com_itdog_recordvideo_NativeBridge_init
     uv_length = width * height / 4;
 
     av_register_all();
-    avformat_network_init();
+    avcodec_register_all();
     p_bit_stream_ctx = av_bitstream_filter_init("aac_adtstoasc");
 
     // 初始化输出格式上下文
     avformat_alloc_output_context2(&p_ofmt_ctx, NULL, "flv", file_dir);
-    if (init_video() != 0) {
+
+    if (init_audio() != 0) {
         return -1;
     }
 
-    if (init_audio() != 0) {
+    if (init_video() != 0) {
         return -1;
     }
 
@@ -321,18 +322,21 @@ int init_video() {
 
 int init_audio() {
 
-    p_codec_a = avcodec_find_encoder(AV_CODEC_ID_AAC);
+    p_codec_a = avcodec_find_encoder();
     if (p_codec_a == NULL) {
         LOGE("can't find audio encoder!");
         return -1;
     }
 
     p_codec_ctx_a = avcodec_alloc_context3(p_codec_a);
-    p_codec_ctx_a->channels = 2;
-    p_codec_ctx_a->channel_layout = av_get_default_channel_layout(p_codec_ctx_a->channels);
-    p_codec_ctx_a->sample_rate = 44100; // 44100 8000
+    p_codec_ctx_a->codec_id = AV_CODEC_ID_AAC;
     p_codec_ctx_a->sample_fmt = AV_SAMPLE_FMT_S16;
+    p_codec_ctx_a->sample_rate = 44100; // 44100 8000
+    p_codec_ctx_a->channels = 2;
+    p_codec_ctx_a->channel_layout = av_get_default_channel_layout(
+            p_codec_ctx_a->channels);;
     p_codec_ctx_a->bit_rate = 64000;
+
     p_codec_ctx_a->time_base.num = 1;
     p_codec_ctx_a->time_base.den = p_codec_ctx_a->sample_rate;
     p_codec_ctx_a->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
