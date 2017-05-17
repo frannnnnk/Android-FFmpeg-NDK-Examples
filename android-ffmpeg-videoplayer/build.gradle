@@ -10,7 +10,9 @@ android {
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
-
+        ndk {
+            abiFilters 'armeabi'
+        }
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
@@ -30,8 +32,10 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-        debug {
-            jniDebuggable true
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
         }
     }
 }

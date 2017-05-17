@@ -28,7 +28,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                VideoPlayer.play(surfaceHolder.getSurface());
+            }
+        }).run();
     }
 
     @Override
